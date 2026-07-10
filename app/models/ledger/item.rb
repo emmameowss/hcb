@@ -6,11 +6,13 @@
 #
 #  id                           :bigint           not null, primary key
 #  amount_cents                 :integer          not null
+#  comment_count                :integer          default(0), not null
 #  custom_memo                  :text
 #  datetime                     :datetime         not null
 #  linked_object_type           :string
 #  marked_no_or_lost_receipt_at :datetime
 #  memo                         :text             not null
+#  not_admin_only_comment_count :integer          default(0), not null
 #  receipt_count                :integer          default(0), not null
 #  receipt_required             :boolean
 #  short_code                   :text
@@ -62,6 +64,8 @@ class Ledger
     normalizes :custom_memo, with: ->(custom_memo) { custom_memo.strip.presence }
 
     monetize :amount_cents
+
+    after_create_commit :assign_linked_object!
 
     # map! calls refresh!
     after_create :map!
@@ -132,7 +136,7 @@ class Ledger
         elsif linked_object.source_subledger.present? && linked_object.source_subledger.card_grant.active?
           "Withdrawal from grant to #{linked_object.source_subledger.card_grant.user.name}"
         elsif linked_object.source_subledger.present? && !linked_object.source_subledger.card_grant.active?
-          "Return of funds from #{linked_object.source_subledger.card_grant.expired? ? "expired" : "canceled"} grant to #{linked_object.card_grant.user.name}"
+          "Return of funds from #{linked_object.source_subledger.card_grant.expired? ? "expired" : "canceled"} grant to #{linked_object.source_subledger.card_grant.user.name}"
         else
           "Transfer to #{linked_object.destination_event.name}"
         end
@@ -140,7 +144,7 @@ class Ledger
         if linked_object.source_subledger.present? && linked_object.source_subledger.card_grant.active?
           "Withdrawal from grant to #{linked_object.source_subledger.card_grant.user.name}"
         elsif linked_object.source_subledger.present? && !linked_object.source_subledger.card_grant.active?
-          "Return of funds from #{linked_object.source_subledger.card_grant.expired? ? "expired" : "canceled"} grant to #{linked_object.card_grant.user.name}"
+          "Return of funds from #{linked_object.source_subledger.card_grant.expired? ? "expired" : "canceled"} grant to #{linked_object.source_subledger.card_grant.user.name}"
         elsif linked_object.card_grant.present?
           "Grant to #{linked_object.card_grant.user.name}"
         elsif linked_object.destination_subledger.present?
@@ -164,7 +168,12 @@ class Ledger
         "Payout holding for reimbursement report #{linked_object.report.hashid}"
       when "Reimbursement::ExpensePayout"
         linked_object.expense.memo
+      when "CardCharge"
+        network_id = linked_object.merchant_data&.dig("network_id")
+        merchant_name = YellowPages::Merchant.lookup(network_id:).name if network_id.present?
+        merchant_name || linked_object.merchant_data&.dig("name") || "Card charge"
       when "RawPendingStripeTransaction", "RawStripeTransaction"
+        # TODO: Remove this once RPSTs and RSTs are migrated to CardCharges
         network_id = stripe_merchant&.dig("network_id")
         merchant_name = YellowPages::Merchant.lookup(network_id:).name if network_id.present?
         merchant_name || stripe_merchant&.dig("name") || "Card charge at unknown merchant"
@@ -195,6 +204,8 @@ class Ledger
         linked_object&.user
       when "WiseTransfer"
         linked_object&.user
+      when "CardCharge"
+        linked_object&.stripe_cardholder&.user
       when "RawPendingStripeTransaction"
         stripe_cardholder&.user
       when "RawStripeTransaction"
@@ -213,8 +224,13 @@ class Ledger
       association(:primary_mapping).reset
       association(:primary_ledger).reset
 
+      # THIS IS TEMPORARY REMOVE ASAP
+      self.linked_object = hcb_code&.linked_object unless linked_object.present?
+
       self.amount_cents = calculate_amount_cents
       self.author = calculate_author
+      self.comment_count = comments.count
+      self.not_admin_only_comment_count = comments.not_admin_only.count
       self.receipt_count = receipts.count
       self.receipt_required = calculate_receipt_required
       # TODO: only update this when the transaction gets its first CPT and then first CT assigned. currently it updates on every refresh
@@ -270,6 +286,18 @@ class Ledger
 
     private
 
+    def assign_linked_object!
+      # Once a linked object is assigned, it should never be changed.
+      # In the event of a merger of ledger items (e.g. mapping a CT to an LI with an existing CPT),
+      # the ledger item with the CPT will persist, and the ledger item with the CT will be destroyed.
+      # No linked objects will be changed.
+      return if linked_object.present?
+
+      linked_object = (canonical_pending_transactions.order(date: :asc).map(&:linked_object) + canonical_transactions.order(date: :asc).map(&:linked_object_v2)).compact.first
+
+      update!(linked_object:) if linked_object.present?
+    end
+
     # TODO: replace usages of this with linked_object_type once all LOs are created
     def transaction_type
       linked_object_type || raw_pending_transaction_type || raw_transaction_type
@@ -294,6 +322,7 @@ class Ledger
         "Wire": ["Wire", "web"],
         "WiseTransfer": ["Wise transfer", "wise"],
         "StripeServiceFee": ["Stripe service fee", "cash"],
+        "CardCharge": ["Card charge", "card"],
         "RawPendingStripeTransaction": ["Card charge", "card"],
         "RawStripeTransaction": ["Card charge", "card"]
       }[transaction_type&.to_sym] || ["Bank account transaction", "cash"]
