@@ -966,6 +966,8 @@ Rails.application.routes.draw do
     post "claim_point_of_contact"
     post "create_sub_organization"
     post "toggle_fee_waiver_eligible"
+    get "summon_money", to: "events#summon_money", as: :summon_money
+    post "summon_money", to: "events#create_summoned_money"
 
     post "remove_header_image"
     post "remove_background_image"

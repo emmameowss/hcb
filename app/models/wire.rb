@@ -96,6 +96,12 @@ class Wire < ApplicationRecord
     )
   end
 
+  # Sandbox: skip the real Column wire and settle instantly.
+  after_create if: -> { Sandbox.enabled? } do
+    mark_approved!
+    mark_deposited!
+  end
+
   validates_presence_of :memo, :payment_for, :recipient_name, :recipient_email
   validates_email_format_of :recipient_email, if: :recipient_email_changed?
   normalizes :recipient_email, with: ->(recipient_email) { recipient_email.strip.downcase }

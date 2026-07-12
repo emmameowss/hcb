@@ -87,6 +87,10 @@ class EventPolicy < ApplicationPolicy
     user&.admin?
   end
 
+  def summon_money?
+    member?
+  end
+
   def team?
     is_public || auditor_or_reader?
   end

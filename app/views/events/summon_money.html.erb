@@ -1,0 +1,25 @@
+<% title "Summon money" %>
+<% page_sm %>
+<%= render "events/nav", selected: :transactions %>
+
+<h1>Summon money</h1>
+
+<div class="card bg-info mb-4">
+  <p class="my-0">
+    <strong>This mints fake money into <%= @event.name %>,</strong> transferred from “<%= Event::OPERATIONS_ORG_NAME %>”. Maximum <%= render_money EventsController::MAX_SUMMON_MONEY_CENTS %> per summon.
+  </p>
+</div>
+
+<%= form_with url: event_summon_money_path(@event), method: :post, local: true do |form| %>
+  <div class="field">
+    <%= form.label :amount, "Amount (USD)" %>
+    <%= form.number_field :amount, step: "0.01", min: "0.01", max: EventsController::MAX_SUMMON_MONEY_CENTS / 100.0, placeholder: "100.00", required: true %>
+  </div>
+
+  <div class="field">
+    <%= form.label :memo, "Memo (optional)" %>
+    <%= form.text_field :memo, placeholder: "summoned money" %>
+  </div>
+
+  <%= form.submit "Summon money", class: "btn" %>
+<% end %>

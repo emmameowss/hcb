@@ -144,6 +144,12 @@ class IncreaseCheck < ApplicationRecord
     create_canonical_pending_transaction!(event:, amount_cents: -amount, memo: "OUTGOING CHECK", date: created_at)
   end
 
+  # Sandbox: skip mailing a real check and mark it sent + settled instantly.
+  after_create if: -> { Sandbox.enabled? } do
+    mark_approved!
+    update!(column_status: "settled")
+  end
+
   after_update if: -> { column_status_previously_changed?(to: "stopped") } do
     canonical_pending_transaction.decline!
 

@@ -404,6 +404,52 @@ class EventsController < ApplicationController
     redirect_to root_path
   end
 
+  # Sandbox faucet: mint fake money into this org by disbursing it from the
+  # "HCB Operations" org. Capped per transaction; see MAX_SUMMON_MONEY_CENTS.
+  MAX_SUMMON_MONEY_CENTS = 25_000_00
+
+  def summon_money
+    authorize @event, :summon_money?
+  end
+
+  def create_summoned_money
+    authorize @event, :summon_money?
+
+    source_event = Event.operations
+    unless source_event
+      return redirect_to event_summon_money_path(@event), flash: { error: "Couldn't find the \"#{Event::OPERATIONS_ORG_NAME}\" organization to summon money from." }
+    end
+
+    memo = params[:memo].to_s.strip
+    memo = "summoned money" if memo.blank?
+
+    amount_cents = Monetize.parse(params[:amount].to_s).cents
+    if amount_cents <= 0
+      return redirect_to event_summon_money_path(@event), flash: { error: "Enter an amount greater than $0." }
+    end
+    if amount_cents > MAX_SUMMON_MONEY_CENTS
+      return redirect_to event_summon_money_path(@event), flash: { error: "The maximum is #{helpers.render_money MAX_SUMMON_MONEY_CENTS} per transaction." }
+    end
+
+    disbursement = DisbursementService::Create.new(
+      source_event_id: source_event.id,
+      destination_event_id: @event.id,
+      name: memo,
+      amount: params[:amount],
+      requested_by_id: current_user.id,
+      skip_balance_check: true, # HCB Operations is a bottomless mint in the sandbox
+    ).run
+
+    # Approve directly (fronting the pending transactions so the balance appears
+    # immediately) instead of relying on governance transfer limits, which a
+    # self-hosted sandbox won't have configured.
+    disbursement.mark_approved!(current_user) if disbursement.may_mark_approved?
+
+    redirect_to event_transactions_path(@event), flash: { success: "Summoned #{helpers.render_money amount_cents} into #{@event.name}." }
+  rescue => e
+    redirect_to event_summon_money_path(@event), flash: { error: e.message }
+  end
+
   def toggle_fee_waiver_eligible
     authorize @event
 

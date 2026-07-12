@@ -1,4 +1,4 @@
-<%# locals: (event:, event_follow: nil) %>
+<%# locals: (event:, event_follow: nil, summon_money: false) %>
 
 <h1 class="flex items-center gap-4 border-b-0 mb-0 flex-wrap gap-y-2">
   <%= yield %>
@@ -12,6 +12,12 @@
   <% end %>
 
   <div class="flex items-center gap-2">
+    <% if summon_money && policy(event).summon_money? %>
+      <%= link_to event_summon_money_path(event), class: "btn bg-success flex items-center gap-1.5" do %>
+        <%= inline_icon "bank-account" %>
+        Summon money
+      <% end %>
+    <% end %>
     <%= render "events/follow_button", event:, event_follow: %>
     <%= render "events/donations/button", event: %>
   </div>

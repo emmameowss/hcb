@@ -228,6 +228,15 @@ class Event < ApplicationRecord
   scope :filter_demo_mode, ->(demo_mode) { demo_mode.nil? ? all : where(demo_mode:) }
   scope :financially_frozen, -> { where(financially_frozen: true) }
 
+  # The organization that funds the "add fake money" faucet on this sandbox
+  # instance. Money added to an org is disbursed from here (which is expected to
+  # run a negative balance, acting as the mint).
+  OPERATIONS_ORG_NAME = "HCB Operations"
+
+  def self.operations
+    find_by(name: OPERATIONS_ORG_NAME)
+  end
+
   before_validation :enforce_transparency_eligibility
 
   BADGES = {

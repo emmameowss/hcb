@@ -21,6 +21,7 @@ module DisbursementService
       source_subledger_id: nil,
       should_charge_fee: false,
       skip_auto_approve: false,
+      skip_balance_check: false,
       fronted: false,
       source_transaction_category_slug: nil,
       destination_transaction_category_slug: nil,
@@ -39,6 +40,7 @@ module DisbursementService
       @scheduled_on = scheduled_on
       @should_charge_fee = should_charge_fee
       @skip_auto_approve = skip_auto_approve
+      @skip_balance_check = skip_balance_check
       @fronted = fronted
       @source_transaction_category_slug = source_transaction_category_slug
       @destination_transaction_category_slug = destination_transaction_category_slug
@@ -51,9 +53,9 @@ module DisbursementService
 
       @source_event.with_lock do
         if @source_subledger_id.present?
-          raise UserError, "You don't have enough money to make this disbursement." unless Subledger.find(@source_subledger_id).balance_cents >= amount_cents || requested_by_admin?
+          raise UserError, "You don't have enough money to make this disbursement." unless @skip_balance_check || Subledger.find(@source_subledger_id).balance_cents >= amount_cents || requested_by_admin?
         else
-          raise UserError, "You don't have enough money to make this disbursement." unless ample_balance?(amount_cents, @source_event) || requested_by_admin?
+          raise UserError, "You don't have enough money to make this disbursement." unless @skip_balance_check || ample_balance?(amount_cents, @source_event) || requested_by_admin?
         end
 
         ActiveRecord::Base.transaction do
@@ -81,7 +83,11 @@ module DisbursementService
             i_cpt.update(fronted: @fronted)
           end
 
-          if requested_by_admin_with_approval_permission?(disbursement) || disbursement.source_event == disbursement.destination_event # Auto-fulfill disbursements between subledgers in the same event
+          if Sandbox.enabled? && disbursement.may_mark_approved?
+            # Sandbox: every org-to-org transfer auto-approves, skipping admin
+            # review and governance transfer limits.
+            disbursement.mark_approved!(requested_by)
+          elsif requested_by_admin_with_approval_permission?(disbursement) || disbursement.source_event == disbursement.destination_event # Auto-fulfill disbursements between subledgers in the same event
             disbursement.approve_by_admin(requested_by)
           end
 

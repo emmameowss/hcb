@@ -212,6 +212,12 @@ class AchTransfer < ApplicationRecord
     )
   end
 
+  # Sandbox: skip the real Column transfer and settle instantly.
+  after_create if: -> { Sandbox.enabled? && scheduled_on.blank? } do
+    mark_in_transit!
+    mark_deposited!
+  end
+
   def send_ach_transfer!
     return unless may_mark_in_transit?
 
