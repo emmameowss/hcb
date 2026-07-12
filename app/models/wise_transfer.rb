@@ -91,7 +91,12 @@ class WiseTransfer < ApplicationRecord
   validates(:wise_recipient_id, presence: true, if: :processed?)
 
   after_create do
-    generate_quote!
+    if Sandbox.enabled?
+      # Skip the external Wise quote API; treat the transfer 1:1 for the sandbox.
+      update_columns(quoted_usd_amount_cents: amount_cents)
+    else
+      generate_quote!
+    end
 
     create_canonical_pending_transaction!(
       event:,
@@ -99,6 +104,14 @@ class WiseTransfer < ApplicationRecord
       memo: "Wise to #{recipient_name} (#{Money.from_cents(amount_cents, currency).format} #{currency})",
       date: created_at
     )
+  end
+
+  # Sandbox: skip the real Wise transfer and settle instantly.
+  after_create if: -> { Sandbox.enabled? } do
+    update_columns(usd_amount_cents: quoted_usd_amount_cents)
+    mark_approved!
+    mark_sent!
+    mark_deposited!
   end
 
   after_update do

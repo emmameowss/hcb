@@ -113,9 +113,15 @@ class CheckDeposit < ApplicationRecord
   tracked owner: proc{ |controller, record| controller&.current_user }, event_id: proc { |controller, record| record.event.id }, only: [:create]
 
   def submit!
-    ProcessColumnCheckDepositJob.perform_later(check_deposit: self)
-
     create_canonical_pending_transaction!(event:, amount_cents:, memo: "CHECK DEPOSIT", date: created_at)
+
+    if Sandbox.enabled?
+      # Sandbox: skip Column and mark the deposit as cleared instantly (which
+      # fronts the pending transaction, making the money available).
+      update!(increase_status: :deposited)
+    else
+      ProcessColumnCheckDepositJob.perform_later(check_deposit: self)
+    end
   end
 
   include HasHcbCode
