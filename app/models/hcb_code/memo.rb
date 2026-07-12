@@ -44,7 +44,7 @@ class HcbCode
       def incoming_disbursement_memo
         return incoming_disbursement.special_appearance_memo if incoming_disbursement.special_appearance_memo
 
-        "Transfer from #{incoming_disbursement.source_event.name}".strip
+        "Transfer from #{incoming_disbursement.source_event_name}".strip
       end
 
       def outgoing_disbursement_memo
@@ -52,7 +52,7 @@ class HcbCode
 
         # "Transfer to #{outgoing_disbursement.destination_event.name}".strip
         # replace the below with ^ after migration.
-        "Transfer from #{outgoing_disbursement.disbursement.source_event.name} to #{outgoing_disbursement.disbursement.destination_event.name}".strip
+        "Transfer from #{outgoing_disbursement.disbursement.source_event_name} to #{outgoing_disbursement.disbursement.destination_event_name}".strip
       end
 
       def invoice_memo

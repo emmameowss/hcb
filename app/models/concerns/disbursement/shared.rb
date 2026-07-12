@@ -22,10 +22,25 @@ class Disbursement
   # Disbursement row). So keying or de-duping by `id` alone (Set, index_by, uniq,
   # a Hash) treats them as one, dropping a leg and representing that Disbursement
   # only once. Key by [id, class] (or the polymorphic `*_type` + id pair) instead.
+  # Displayed in place of a source/destination event's name when that event has
+  # been deleted (e.g. an org was removed from the admin panel). Disbursements are
+  # two-sided, so deleting one org leaves the counterparty's disbursement pointing
+  # at a now-nil event; use the *_event_name helpers below instead of dereferencing
+  # `source_event.name` / `destination_event.name` directly.
+  DELETED_ORG_NAME = "a deleted organization"
+
   module Shared
     extend ActiveSupport::Concern
 
     included do
+      def source_event_name
+        source_event&.name || DELETED_ORG_NAME
+      end
+
+      def destination_event_name
+        destination_event&.name || DELETED_ORG_NAME
+      end
+
       include HasLedgerItem
       include PgSearch::Model
       pg_search_scope :search_name, against: [:name]
@@ -102,7 +117,7 @@ class Disbursement
         if fulfilled?
           :success
         elsif processed? || pending?
-          if destination_event.can_front_balance?
+          if destination_event&.can_front_balance?
             :success
           else
             :muted
@@ -125,7 +140,7 @@ class Disbursement
         if fulfilled?
           "fulfilled"
         elsif processed? || pending?
-          if destination_event.can_front_balance?
+          if destination_event&.can_front_balance?
             "fulfilled"
           else
             "processing"
@@ -146,7 +161,7 @@ class Disbursement
       end
 
       def state_icon
-        "checkmark" if fulfilled? || processed? || (pending? && destination_event.can_front_balance?)
+        "checkmark" if fulfilled? || processed? || (pending? && destination_event&.can_front_balance?)
       end
 
       # Special appearance methods

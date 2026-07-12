@@ -88,14 +88,14 @@
     <br />
     <br />
     <p style="margin-top: 2rem; margin-bottom: 0.5rem;"><%= format_date @disbursement.created_at %></p>
-    <p style="font-size: 12.5pt;"><span class="bold">HCB Transfer: <%= @disbursement.source_event.name %> to
-        <%= @disbursement.destination_event.name %></span></p>
+    <p style="font-size: 12.5pt;"><span class="bold">HCB Transfer: <%= @disbursement.source_event_name %> to
+        <%= @disbursement.destination_event_name %></span></p>
     <br />
     <div style="line-height: 1.25;">
       <p>To whom it may concern,</p>
       <p>
-        This letter serves as a confirmation that <%= @disbursement.source_event.name %> has transferred
-        <%= render_money @disbursement.amount %> to <%= @disbursement.destination_event.name %> for the reason of
+        This letter serves as a confirmation that <%= @disbursement.source_event_name %> has transferred
+        <%= render_money @disbursement.amount %> to <%= @disbursement.destination_event_name %> for the reason of
         <em>"<%= @disbursement.name %>"</em>.
       </p>
       <table style="line-height: 1.15">
@@ -114,11 +114,11 @@
           <% end %>
           <tr>
             <td class="bold">From</td>
-            <td colspan="2"><%= @disbursement.source_event.name %></td>
+            <td colspan="2"><%= @disbursement.source_event_name %></td>
           </tr>
           <tr>
             <td class="bold">To</td>
-            <td colspan="2"><%= @disbursement.destination_event.name %></td>
+            <td colspan="2"><%= @disbursement.destination_event_name %></td>
           </tr>
           <tr>
             <td class="bold">Payment purpose</td>

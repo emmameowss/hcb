@@ -3,6 +3,20 @@
 require "cgi"
 
 module EventsHelper
+  # Renders a link to an org, or a muted "a deleted organization" placeholder when
+  # the org no longer exists (e.g. it was deleted while still referenced by a
+  # counterparty's disbursement). `respect_policy:` gates the link behind
+  # EventPolicy#show? like `link_to_if`.
+  def deleted_org_safe_link(event, respect_policy: false, **options)
+    return content_tag(:span, Disbursement::DELETED_ORG_NAME, class: "muted") if event.nil?
+
+    if respect_policy
+      link_to_if(EventPolicy.new(current_user, event).show?, event.name, event, options)
+    else
+      link_to(event.name, event, options)
+    end
+  end
+
   # Items in the NAV_ITEMS array can be either nav links or sections, and are rendered in order:
 
   # Nav link schema

@@ -135,7 +135,9 @@
               <td style="max-width: 15ch" class="overflow-hidden truncate" title="<%= d.name %>">
                 <% if d.is_a?(Disbursement::Outgoing) %>
                   <strong>
-                    <% if d.destination_event.is_public? || organizer_signed_in?(d.destination_event) %>
+                    <% if d.destination_event.nil? %>
+                      <%= d.destination_event_name %>
+                    <% elsif d.destination_event.is_public? || organizer_signed_in?(d.destination_event) %>
                       <%= link_to d.destination_event.name, d.destination_event, style: "z-index:1;pointer-events:auto" %>
                     <% else %>
                       <%= d.destination_event.name %>

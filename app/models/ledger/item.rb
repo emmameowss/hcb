@@ -138,7 +138,7 @@ class Ledger
         elsif linked_object.source_subledger.present? && !linked_object.source_subledger.card_grant.active?
           "Return of funds from #{linked_object.source_subledger.card_grant.expired? ? "expired" : "canceled"} grant to #{linked_object.source_subledger.card_grant.user.name}"
         else
-          "Transfer to #{linked_object.destination_event.name}"
+          "Transfer to #{linked_object.destination_event_name}"
         end
       when "Disbursement::Incoming"
         if linked_object.source_subledger.present? && linked_object.source_subledger.card_grant.active?
@@ -150,7 +150,7 @@ class Ledger
         elsif linked_object.destination_subledger.present?
           "Topup of grant to #{linked_object.destination_subledger.card_grant.user.name}"
         else
-          "Transfer from #{linked_object.source_event.name}"
+          "Transfer from #{linked_object.source_event_name}"
         end
       when "StripeServiceFee"
         linked_object.stripe_description

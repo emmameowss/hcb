@@ -16,11 +16,19 @@ object_shape(json, disbursement) do
   json.amount_cents disbursement.amount
 
   json.from do
-    json.partial! "api/v4/events/event", event: disbursement.source_event
+    if disbursement.source_event.present?
+      json.partial! "api/v4/events/event", event: disbursement.source_event
+    else
+      json.nil!
+    end
   end
 
   json.to do
-    json.partial! "api/v4/events/event", event: disbursement.destination_event
+    if disbursement.destination_event.present?
+      json.partial! "api/v4/events/event", event: disbursement.destination_event
+    else
+      json.nil!
+    end
   end
 
   json.sender do

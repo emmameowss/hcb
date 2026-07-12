@@ -648,7 +648,7 @@ class Transaction < ApplicationRecord
       fee_applies: false
     )
 
-    self.display_name = "#{disbursement.name} from #{disbursement.source_event.name}"
+    self.display_name = "#{disbursement.name} from #{disbursement.source_event_name}"
     self.save
   end
 

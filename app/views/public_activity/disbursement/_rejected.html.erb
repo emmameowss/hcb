@@ -1,8 +1,8 @@
 <% source = activity.trackable.source_event %>
 <% destination = activity.trackable.destination_event %>
 <% current_user ||= local_assigns[:p][:current_user] %>
-<% source_link = source ? link_to(source.name, source) : content_tag(:span, "a deleted organization", class: "muted") %>
-<% destination_link = destination ? link_to(destination.name, destination) : content_tag(:span, "a deleted organization", class: "muted") %>
+<% source_link = deleted_org_safe_link(source) %>
+<% destination_link = deleted_org_safe_link(destination) %>
 
 <% if activity.trackable.card_grant.present? %>
   <%= render layout: "/public_activity/common", locals: { activity:, current_user: } do %>

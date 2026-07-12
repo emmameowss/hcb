@@ -68,7 +68,7 @@ class AdminMailer < ApplicationMailer
 
         @tasks << {
           url: disbursement_process_admin_url(disbursement),
-          label: "[Disbursement] #{ApplicationController.helpers.render_money disbursement.amount} #{disbursement.name} (#{disbursement.source_event.name} to #{disbursement.destination_event.name}) (Requested by #{disbursement.requested_by&.name || "Unknown User"})"
+          label: "[Disbursement] #{ApplicationController.helpers.render_money disbursement.amount} #{disbursement.name} (#{disbursement.source_event_name} to #{disbursement.destination_event_name}) (Requested by #{disbursement.requested_by&.name || "Unknown User"})"
         }
       end
     end

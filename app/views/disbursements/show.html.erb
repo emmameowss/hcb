@@ -57,7 +57,7 @@
 <article class="card max-w-lg mx-auto mt3">
   <section class="mb2">
     <h2 class="mt0 mb0 heading">
-      <span class="flex-auto mb1">Transfer to <%= @disbursement.event.name %></span>
+      <span class="flex-auto mb1">Transfer to <%= @disbursement.destination_event_name %></span>
       <span class="badge h4 ml0 mb1 bg-<%= @disbursement.state %>">
         <%= @disbursement.state_text %>
       </span>
@@ -66,12 +66,12 @@
     <section class="details">
       <p>
         <strong>Source</strong>
-        <%= link_to @disbursement.source_event.name, @disbursement.source_event %>
+        <%= deleted_org_safe_link @disbursement.source_event %>
       </p>
 
       <p>
         <strong>Destination</strong>
-        <%= link_to @disbursement.event.name, @disbursement.event %>
+        <%= deleted_org_safe_link @disbursement.event %>
       </p>
 
       <p>
