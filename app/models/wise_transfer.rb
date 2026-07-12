@@ -92,8 +92,9 @@ class WiseTransfer < ApplicationRecord
 
   after_create do
     if Sandbox.enabled?
-      # Skip the external Wise quote API; treat the transfer 1:1 for the sandbox.
-      update_columns(quoted_usd_amount_cents: amount_cents)
+      # Skip the live Wise transfer, but still convert the amount to USD at real
+      # rates so the sandbox debit is realistic.
+      update_columns(quoted_usd_amount_cents: MoneyService.convert_to_usd(amount_cents, currency))
     else
       generate_quote!
     end

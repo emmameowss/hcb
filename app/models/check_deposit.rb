@@ -117,8 +117,9 @@ class CheckDeposit < ApplicationRecord
 
     if Sandbox.enabled?
       # Sandbox: skip Column and mark the deposit as cleared instantly (which
-      # fronts the pending transaction, making the money available).
-      update!(increase_status: :deposited)
+      # fronts the pending transaction, making the money available). The fake
+      # column_id keeps it out of the "unprocessed" scope and renders as cleared.
+      update!(increase_status: :deposited, column_id: "sandbox_#{id}")
     else
       ProcessColumnCheckDepositJob.perform_later(check_deposit: self)
     end
