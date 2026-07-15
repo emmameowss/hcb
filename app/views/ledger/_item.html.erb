@@ -6,6 +6,9 @@
   </td>
   <td><%= item.datetime.strftime("%b %e, %Y") %></td>
   <td class="transaction__memo transaction__memo--fluid">
+    <% if item.status.present? && !item.settled? && !item.reversed? %>
+      <%= badge_for item.status_text, class: item.status_css %>
+    <% end %>
     <%= item.memo %>
   </td>
   <td class="nowrap">
@@ -16,7 +19,11 @@
   </td>
   <td class="nowrap">
     <span class="flex items-center justify-end">
-      <%= item.amount.format %>
+      <% if !organizer_signed_in? && item.likely_account_verification_related? %>
+        <%= redacted_amount %>
+      <% else %>
+        <%= item.amount.format %>
+      <% end %>
     </span>
   </td>
   <% admin_tool("", "td") do %>

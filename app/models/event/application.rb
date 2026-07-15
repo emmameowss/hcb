@@ -266,7 +266,7 @@ class Event
       !teen_led? || !!contract&.reissue?
     end
 
-    def send_contract(reissue_signee_message: nil, reissue_cosigner_message: nil, reissue_of: nil, **options)
+    def send_contract(reissue_messages: {}, reissue_of: nil, **options)
       if name.nil? || description.nil?
         raise StandardError.new("Cannot create a contract for application #{hashid}: missing name and/or description")
       end
@@ -301,6 +301,8 @@ class Event
       fs_contract.parties.reload.sort_by { |party| party.hcb? ? 1 : 0 }.each do |party|
         party.mark_signed! unless party.signed?
       end
+      fs_contract.send!(reissue_messages:)
+      fs_contract.party(:cosigner)&.notify unless reissue_of.present?
 
       set_airtable_status("Documents sent") if reissue_of.present?
 
