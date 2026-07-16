@@ -184,6 +184,7 @@ class User < ApplicationRecord
   has_one :default_payout_method, through: :personal_legal_entity
 
   has_many :payments_received, through: :legal_entities, source: :payments
+  has_many :payroll_positions, through: :legal_entities
 
   has_encrypted :birthday, type: :date
 
@@ -207,6 +208,8 @@ class User < ApplicationRecord
   after_update :queue_sync_with_loops_job, if: :verified?
 
   after_update :update_draft_applications, if: -> { birthday_previously_changed? }
+
+  after_update :update_legal_entity_name, if: -> { full_name_previously_changed? }
 
   before_update :set_default_seasonal_theme
 
@@ -703,7 +706,7 @@ class User < ApplicationRecord
   private
 
   def create_legal_entity
-    legal_entities.create!(entity_type: :person)
+    legal_entities.create!(entity_type: :person, name: full_name)
   end
 
   def auditors_must_be_verified
@@ -810,6 +813,10 @@ class User < ApplicationRecord
 
   def update_draft_applications
     applications.draft.each { |application| application.update!(teen_led: is_teenager?) }
+  end
+
+  def update_legal_entity_name
+    personal_legal_entity.update!(name: full_name)
   end
 
   def should_sync_teenager_columns?
