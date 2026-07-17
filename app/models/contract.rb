@@ -277,7 +277,6 @@ class Contract < ApplicationRecord
   end
 
   def send_using_docuseal!
-    response = docuseal_client.post("submissions") do |req|
     # /submissions/pdf combines our template with inline documents versus
     # the standard /submissions
     endpoint = inline_documents? ? "/submissions/pdf" : "/submissions"
