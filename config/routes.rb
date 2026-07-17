@@ -179,6 +179,8 @@ Rails.application.routes.draw do
 
       post "impersonate"
       post "unimpersonate"
+
+      post "suppress_card_locking", to: "users#suppress_card_locking"
     end
     post "delete_profile_picture", to: "users#delete_profile_picture"
     post "generate_totp"
@@ -648,7 +650,11 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :payments, only: [:show], concerns: :commentable
+  resources :payments, only: [:show], concerns: :commentable do
+    member do
+      post "cancel"
+    end
+  end
 
   get "brand_guidelines", to: redirect("branding")
   get "mobile", to: "static_pages#mobile"
