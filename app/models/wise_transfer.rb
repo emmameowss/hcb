@@ -192,11 +192,11 @@ class WiseTransfer < ApplicationRecord
 
   def status_color
     if pending?
-      :warning
+      :muted
     elsif approved?
       :blue
     elsif sent?
-      :purple
+      :blue
     elsif rejected? || failed?
       :error
     elsif deposited?
